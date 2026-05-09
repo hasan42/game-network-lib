@@ -11,8 +11,8 @@ export {
 } from './types';
 
 export type {
-  GameState,
-  GameAction,
+  AnyGameState as GameState,
+  AnyGameAction as GameAction,
   NetworkRole,
   NetworkEvent,
   NetworkBackend,

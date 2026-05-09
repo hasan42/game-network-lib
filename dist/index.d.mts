@@ -6,13 +6,13 @@
  * - Guests send actions → host applies them
  * - Supports PeerJS (P2P, 2 players) and Firebase (N players, real-time)
  */
-/** Any serializable game state — use `Record<string, unknown> | null` to allow interfaces */
-type GameState = Record<string, unknown> | null;
+/** Any serializable game state */
+type AnyGameState = Record<string, unknown>;
 /** Any serializable game action */
-type GameAction = {
+type AnyGameAction = {
     type: string;
     [key: string]: unknown;
-} | null;
+};
 /** Network role */
 type NetworkRole = 'host' | 'guest';
 /** Network event */
@@ -23,9 +23,9 @@ interface NetworkEvent {
 /** Network backend type */
 type NetworkBackend = 'peerjs' | 'firebase';
 /** Callback for receiving game state */
-type OnStateCallback<S extends GameState> = (state: S, myPlayerIndex: number) => void;
+type OnStateCallback<S extends AnyGameState> = (state: S, myPlayerIndex: number) => void;
 /** Callback for receiving an action (host only) */
-type OnActionCallback<A extends GameAction> = (action: A & {
+type OnActionCallback<A extends AnyGameAction> = (action: A & {
     playerIndex: number;
 }) => void;
 /** Callback for connection/disconnection events */
@@ -52,7 +52,7 @@ interface NetworkManagerInterface {
     /** Subscribe to data events only */
     onData(callback: (data: unknown) => void): () => void;
 }
-interface GameNetworkConfig<S extends GameState, A extends GameAction> {
+interface GameNetworkConfig<S extends AnyGameState, A extends AnyGameAction> {
     /** Which backend to use */
     backend: NetworkBackend;
     /** Called on host when a guest sends an action */
@@ -80,7 +80,7 @@ interface GameNetworkStatus {
  * - Action routing (guest → host)
  * - Clean connection lifecycle
  */
-declare class GameNetwork<S extends GameState, A extends GameAction> {
+declare class GameNetwork<S extends AnyGameState, A extends AnyGameAction> {
     private network;
     private config;
     private _status;
@@ -238,4 +238,4 @@ declare class FirebaseNetworkManager implements NetworkManagerInterface {
     private generatePlayerId;
 }
 
-export { type FirebaseConfig, FirebaseNetworkManager, type FirestorePlayer, type FirestoreRoom, type GameAction, GameNetwork, type GameNetworkConfig, type GameNetworkStatus, type GameState, type NetworkBackend, type NetworkEvent, type NetworkManagerInterface, type NetworkRole, type OnActionCallback, type OnConnectionCallback, type OnErrorCallback, type OnStateCallback, type PeerJSConfig, PeerJSNetworkManager, serializeState };
+export { type FirebaseConfig, FirebaseNetworkManager, type FirestorePlayer, type FirestoreRoom, type AnyGameAction as GameAction, GameNetwork, type GameNetworkConfig, type GameNetworkStatus, type AnyGameState as GameState, type NetworkBackend, type NetworkEvent, type NetworkManagerInterface, type NetworkRole, type OnActionCallback, type OnConnectionCallback, type OnErrorCallback, type OnStateCallback, type PeerJSConfig, PeerJSNetworkManager, serializeState };

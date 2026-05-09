@@ -9,11 +9,11 @@
 
 // ─── Generic Types ───
 
-/** Any serializable game state — use `Record<string, unknown> | null` to allow interfaces */
-export type GameState = Record<string, unknown> | null;
+/** Any serializable game state */
+export type AnyGameState = Record<string, unknown>;
 
 /** Any serializable game action */
-export type GameAction = { type: string; [key: string]: unknown } | null;
+export type AnyGameAction = { type: string; [key: string]: unknown };
 
 /** Network role */
 export type NetworkRole = 'host' | 'guest';
@@ -28,10 +28,10 @@ export interface NetworkEvent {
 export type NetworkBackend = 'peerjs' | 'firebase';
 
 /** Callback for receiving game state */
-export type OnStateCallback<S extends GameState> = (state: S, myPlayerIndex: number) => void;
+export type OnStateCallback<S extends AnyGameState> = (state: S, myPlayerIndex: number) => void;
 
 /** Callback for receiving an action (host only) */
-export type OnActionCallback<A extends GameAction> = (action: A & { playerIndex: number }) => void;
+export type OnActionCallback<A extends AnyGameAction> = (action: A & { playerIndex: number }) => void;
 
 /** Callback for connection/disconnection events */
 export type OnConnectionCallback = (connected: boolean, role: NetworkRole | null) => void;
@@ -70,7 +70,7 @@ export interface NetworkManagerInterface {
 
 // ─── Game Network Client ───
 
-export interface GameNetworkConfig<S extends GameState, A extends GameAction> {
+export interface GameNetworkConfig<S extends AnyGameState, A extends AnyGameAction> {
   /** Which backend to use */
   backend: NetworkBackend;
   /** Called on host when a guest sends an action */
@@ -100,7 +100,7 @@ export interface GameNetworkStatus {
  * - Action routing (guest → host)
  * - Clean connection lifecycle
  */
-export class GameNetwork<S extends GameState, A extends GameAction> {
+export class GameNetwork<S extends AnyGameState, A extends AnyGameAction> {
   private network: NetworkManagerInterface | null = null;
   private config: GameNetworkConfig<S, A>;
   private _status: GameNetworkStatus;
