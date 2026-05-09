@@ -6,13 +6,13 @@
  * - Guests send actions → host applies them
  * - Supports PeerJS (P2P, 2 players) and Firebase (N players, real-time)
  */
-/** Any serializable game state */
-type GameState = Record<string, unknown>;
+/** Any serializable game state — use `Record<string, unknown> | null` to allow interfaces */
+type GameState = Record<string, unknown> | null;
 /** Any serializable game action */
 type GameAction = {
     type: string;
     [key: string]: unknown;
-};
+} | null;
 /** Network role */
 type NetworkRole = 'host' | 'guest';
 /** Network event */

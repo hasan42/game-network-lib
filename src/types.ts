@@ -9,11 +9,11 @@
 
 // ─── Generic Types ───
 
-/** Any serializable game state */
-export type GameState = Record<string, unknown>;
+/** Any serializable game state — use `Record<string, unknown> | null` to allow interfaces */
+export type GameState = Record<string, unknown> | null;
 
 /** Any serializable game action */
-export type GameAction = { type: string; [key: string]: unknown };
+export type GameAction = { type: string; [key: string]: unknown } | null;
 
 /** Network role */
 export type NetworkRole = 'host' | 'guest';
