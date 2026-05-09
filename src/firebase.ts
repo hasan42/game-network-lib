@@ -143,7 +143,8 @@ export class FirebaseNetworkManager implements NetworkManagerInterface {
     const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import('firebase/firestore');
 
     const playerName = (options?.playerName as string) ?? 'Guest';
-    const playerId = this.generatePlayerId();
+    const playerIndex = options?.playerIndex as number | undefined;
+    const playerId = options?.playerId as string | undefined;
 
     // Check room exists
     const roomRef = doc(db, 'game_rooms', roomId);
@@ -153,6 +154,33 @@ export class FirebaseNetworkManager implements NetworkManagerInterface {
     }
 
     const room = roomSnap.data() as FirestoreRoom;
+
+    // Reconnect: if playerId is provided and already in the room, just re-subscribe
+    if (playerId && playerIndex !== undefined) {
+      // Update player as connected
+      const existingPlayerRef = doc(db, 'game_rooms', roomId, 'players', playerId);
+      await setDoc(existingPlayerRef, {
+        id: playerId,
+        name: `${playerName} ${playerIndex + 1}`,
+        roomId,
+        index: playerIndex,
+        connected: true,
+        lastSeen: serverTimestamp(),
+      }, { merge: true });
+
+      this._roomId = roomId;
+      this.myId = playerId;
+      this._isHost = false;
+      this._role = 'guest';
+      this._playerIndex = playerIndex;
+
+      this.startHeartbeat(db);
+      this.startSubscriptions(db);
+      this._connected = true;
+      this.emit({ type: 'connected', payload: { role: 'guest', roomId } });
+      return;
+    }
+
     if (room.status !== 'waiting') {
       throw new Error('Room is not accepting players');
     }
@@ -160,15 +188,16 @@ export class FirebaseNetworkManager implements NetworkManagerInterface {
       throw new Error('Room is full');
     }
 
-    const playerIndex = room.playerCount; // 0-based: host=0, first guest=1, etc.
+    const newPlayerIndex = room.playerCount; // 0-based: host=0, first guest=1, etc.
 
     // Add player
-    const playerRef = doc(db, 'game_rooms', roomId, 'players', playerId);
+    const newPlayerId = this.generatePlayerId();
+    const playerRef = doc(db, 'game_rooms', roomId, 'players', newPlayerId);
     await setDoc(playerRef, {
-      id: playerId,
-      name: `${playerName} ${playerIndex + 1}`,
+      id: newPlayerId,
+      name: `${playerName} ${newPlayerIndex + 1}`,
       roomId,
-      index: playerIndex,
+      index: newPlayerIndex,
       connected: true,
       lastSeen: serverTimestamp(),
     });
@@ -180,14 +209,15 @@ export class FirebaseNetworkManager implements NetworkManagerInterface {
     });
 
     this._roomId = roomId;
-    this.myId = playerId;
+    this.myId = newPlayerId;
     this._isHost = false;
     this._role = 'guest';
-    this._playerIndex = playerIndex;
+    this._playerIndex = newPlayerIndex;
 
     this.startHeartbeat(db);
     this.startSubscriptions(db);
     this._connected = true;
+    this.emit({ type: 'connected', payload: { role: 'guest', roomId } });
   }
 
   disconnect(): void {

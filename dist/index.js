@@ -402,26 +402,49 @@ var FirebaseNetworkManager = class {
     const db = await this.getDb();
     const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import("firebase/firestore");
     const playerName = options?.playerName ?? "Guest";
-    const playerId = this.generatePlayerId();
+    const playerIndex = options?.playerIndex;
+    const playerId = options?.playerId;
     const roomRef = doc(db, "game_rooms", roomId);
     const roomSnap = await getDoc(roomRef);
     if (!roomSnap.exists()) {
       throw new Error("Room not found");
     }
     const room = roomSnap.data();
+    if (playerId && playerIndex !== void 0) {
+      const existingPlayerRef = doc(db, "game_rooms", roomId, "players", playerId);
+      await setDoc(existingPlayerRef, {
+        id: playerId,
+        name: `${playerName} ${playerIndex + 1}`,
+        roomId,
+        index: playerIndex,
+        connected: true,
+        lastSeen: serverTimestamp()
+      }, { merge: true });
+      this._roomId = roomId;
+      this.myId = playerId;
+      this._isHost = false;
+      this._role = "guest";
+      this._playerIndex = playerIndex;
+      this.startHeartbeat(db);
+      this.startSubscriptions(db);
+      this._connected = true;
+      this.emit({ type: "connected", payload: { role: "guest", roomId } });
+      return;
+    }
     if (room.status !== "waiting") {
       throw new Error("Room is not accepting players");
     }
     if (room.playerCount >= room.maxPlayers) {
       throw new Error("Room is full");
     }
-    const playerIndex = room.playerCount;
-    const playerRef = doc(db, "game_rooms", roomId, "players", playerId);
+    const newPlayerIndex = room.playerCount;
+    const newPlayerId = this.generatePlayerId();
+    const playerRef = doc(db, "game_rooms", roomId, "players", newPlayerId);
     await setDoc(playerRef, {
-      id: playerId,
-      name: `${playerName} ${playerIndex + 1}`,
+      id: newPlayerId,
+      name: `${playerName} ${newPlayerIndex + 1}`,
       roomId,
-      index: playerIndex,
+      index: newPlayerIndex,
       connected: true,
       lastSeen: serverTimestamp()
     });
@@ -430,13 +453,14 @@ var FirebaseNetworkManager = class {
       updatedAt: serverTimestamp()
     });
     this._roomId = roomId;
-    this.myId = playerId;
+    this.myId = newPlayerId;
     this._isHost = false;
     this._role = "guest";
-    this._playerIndex = playerIndex;
+    this._playerIndex = newPlayerIndex;
     this.startHeartbeat(db);
     this.startSubscriptions(db);
     this._connected = true;
+    this.emit({ type: "connected", payload: { role: "guest", roomId } });
   }
   disconnect() {
     this.stopHeartbeat();
