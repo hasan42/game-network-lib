@@ -1,0 +1,53 @@
+{
+  "name": "game-network-lib",
+  "version": "1.0.0",
+  "description": "Real-time multiplayer networking library for games — PeerJS + Firebase, host-authoritative pattern",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "firebase": ">=9",
+    "peerjs": ">=1.5"
+  },
+  "peerDependenciesMeta": {
+    "firebase": {
+      "optional": true
+    },
+    "peerjs": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "firebase": "^12.13.0",
+    "peerjs": "^1.5.5",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.0"
+  },
+  "keywords": [
+    "game",
+    "networking",
+    "multiplayer",
+    "peerjs",
+    "firebase",
+    "real-time"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hasan42/game-network-lib.git"
+  }
+}
