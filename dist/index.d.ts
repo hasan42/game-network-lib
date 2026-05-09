@@ -23,9 +23,9 @@ interface NetworkEvent {
 /** Network backend type */
 type NetworkBackend = 'peerjs' | 'firebase';
 /** Callback for receiving game state */
-type OnStateCallback<S extends AnyGameState> = (state: S, myPlayerIndex: number) => void;
+type OnStateCallback = (state: AnyGameState, myPlayerIndex: number) => void;
 /** Callback for receiving an action (host only) */
-type OnActionCallback<A extends AnyGameAction> = (action: A & {
+type OnActionCallback = (action: AnyGameAction & {
     playerIndex: number;
 }) => void;
 /** Callback for connection/disconnection events */
@@ -52,13 +52,13 @@ interface NetworkManagerInterface {
     /** Subscribe to data events only */
     onData(callback: (data: unknown) => void): () => void;
 }
-interface GameNetworkConfig<S extends AnyGameState, A extends AnyGameAction> {
+interface GameNetworkConfig {
     /** Which backend to use */
     backend: NetworkBackend;
     /** Called on host when a guest sends an action */
-    onAction?: OnActionCallback<A>;
+    onAction?: OnActionCallback;
     /** Called on guest when host broadcasts a state update */
-    onState?: OnStateCallback<S>;
+    onState?: OnStateCallback;
     /** Called when connection status changes */
     onConnectionChange?: OnConnectionCallback;
     /** Called on network error */
@@ -80,27 +80,23 @@ interface GameNetworkStatus {
  * - Action routing (guest → host)
  * - Clean connection lifecycle
  */
-declare class GameNetwork<S extends AnyGameState, A extends AnyGameAction> {
+declare class GameNetwork {
     private network;
     private config;
     private _status;
-    constructor(config: GameNetworkConfig<S, A>);
+    constructor(config: GameNetworkConfig);
     get status(): GameNetworkStatus;
     /** Initialize as host */
     initHost(network: NetworkManagerInterface): Promise<string>;
     /** Initialize as guest */
     initGuest(network: NetworkManagerInterface, playerIndex?: number): Promise<void>;
     /** Send an action (guest → host) */
-    sendAction(action: A): boolean;
+    sendAction(action: AnyGameAction): boolean;
     /** Broadcast game state (host → guests) */
-    broadcastState(state: S): boolean;
+    broadcastState(state: AnyGameState): boolean;
     /** Disconnect */
     disconnect(): void;
 }
-/**
- * Firebase room document structure.
- * Used by FirebaseNetworkManager — you can import this for type-safe room access.
- */
 interface FirestoreRoom {
     id: string;
     hostId: string;
@@ -238,4 +234,4 @@ declare class FirebaseNetworkManager implements NetworkManagerInterface {
     private generatePlayerId;
 }
 
-export { type FirebaseConfig, FirebaseNetworkManager, type FirestorePlayer, type FirestoreRoom, type AnyGameAction as GameAction, GameNetwork, type GameNetworkConfig, type GameNetworkStatus, type AnyGameState as GameState, type NetworkBackend, type NetworkEvent, type NetworkManagerInterface, type NetworkRole, type OnActionCallback, type OnConnectionCallback, type OnErrorCallback, type OnStateCallback, type PeerJSConfig, PeerJSNetworkManager, serializeState };
+export { type AnyGameAction, type AnyGameState, type FirebaseConfig, FirebaseNetworkManager, type FirestorePlayer, type FirestoreRoom, GameNetwork, type GameNetworkConfig, type GameNetworkStatus, type NetworkBackend, type NetworkEvent, type NetworkManagerInterface, type NetworkRole, type OnActionCallback, type OnConnectionCallback, type OnErrorCallback, type OnStateCallback, type PeerJSConfig, PeerJSNetworkManager, serializeState };

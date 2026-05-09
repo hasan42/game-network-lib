@@ -28,10 +28,10 @@ export interface NetworkEvent {
 export type NetworkBackend = 'peerjs' | 'firebase';
 
 /** Callback for receiving game state */
-export type OnStateCallback<S extends AnyGameState> = (state: S, myPlayerIndex: number) => void;
+export type OnStateCallback = (state: AnyGameState, myPlayerIndex: number) => void;
 
 /** Callback for receiving an action (host only) */
-export type OnActionCallback<A extends AnyGameAction> = (action: A & { playerIndex: number }) => void;
+export type OnActionCallback = (action: AnyGameAction & { playerIndex: number }) => void;
 
 /** Callback for connection/disconnection events */
 export type OnConnectionCallback = (connected: boolean, role: NetworkRole | null) => void;
@@ -70,13 +70,13 @@ export interface NetworkManagerInterface {
 
 // ─── Game Network Client ───
 
-export interface GameNetworkConfig<S extends AnyGameState, A extends AnyGameAction> {
+export interface GameNetworkConfig {
   /** Which backend to use */
   backend: NetworkBackend;
   /** Called on host when a guest sends an action */
-  onAction?: OnActionCallback<A>;
+  onAction?: OnActionCallback;
   /** Called on guest when host broadcasts a state update */
-  onState?: OnStateCallback<S>;
+  onState?: OnStateCallback;
   /** Called when connection status changes */
   onConnectionChange?: OnConnectionCallback;
   /** Called on network error */
@@ -100,12 +100,12 @@ export interface GameNetworkStatus {
  * - Action routing (guest → host)
  * - Clean connection lifecycle
  */
-export class GameNetwork<S extends AnyGameState, A extends AnyGameAction> {
+export class GameNetwork {
   private network: NetworkManagerInterface | null = null;
-  private config: GameNetworkConfig<S, A>;
+  private config: GameNetworkConfig;
   private _status: GameNetworkStatus;
 
-  constructor(config: GameNetworkConfig<S, A>) {
+  constructor(config: GameNetworkConfig) {
     this.config = config;
     this._status = {
       backend: config.backend,
@@ -127,11 +127,11 @@ export class GameNetwork<S extends AnyGameState, A extends AnyGameAction> {
     const roomId = await network.host();
 
     network.onData((data) => {
-      const msg = data as { type: string; action?: A; playerIndex?: number };
+      const msg = data as { type: string; action?: AnyGameAction; playerIndex?: number };
       if (msg.type === 'action' && msg.action) {
-        const playerIndex = msg.playerIndex ?? msg.action.playerIndex ?? -1;
-        const innerAction = (msg.action as { action?: A }).action ?? msg.action;
-        this.config.onAction?.({ ...innerAction, playerIndex } as A & { playerIndex: number });
+        const playerIndex = msg.playerIndex ?? (msg.action as any).playerIndex ?? -1;
+        const innerAction = (msg.action as { action?: AnyGameAction }).action ?? msg.action;
+        this.config.onAction?.({ ...innerAction, playerIndex });
       }
     });
 
@@ -167,7 +167,7 @@ export class GameNetwork<S extends AnyGameState, A extends AnyGameAction> {
     const myIndex = playerIndex ?? 1;
 
     network.onData((data) => {
-      const msg = data as { type: string; state?: S; myPlayerIndex?: number };
+      const msg = data as { type: string; state?: AnyGameState; myPlayerIndex?: number };
       if (msg.type === 'full_state' && msg.state) {
         const idx = msg.myPlayerIndex ?? myIndex;
         this._status.myPlayerIndex = idx;
@@ -198,13 +198,13 @@ export class GameNetwork<S extends AnyGameState, A extends AnyGameAction> {
   }
 
   /** Send an action (guest → host) */
-  sendAction(action: A): boolean {
+  sendAction(action: AnyGameAction): boolean {
     if (!this.network) return false;
     return this.network.send({ type: 'action', action });
   }
 
   /** Broadcast game state (host → guests) */
-  broadcastState(state: S): boolean {
+  broadcastState(state: AnyGameState): boolean {
     if (!this.network) return false;
     return this.network.send({ type: 'full_state', state });
   }
@@ -227,10 +227,6 @@ export class GameNetwork<S extends AnyGameState, A extends AnyGameAction> {
 
 // ─── Firebase Helpers ───
 
-/**
- * Firebase room document structure.
- * Used by FirebaseNetworkManager — you can import this for type-safe room access.
- */
 export interface FirestoreRoom {
   id: string;
   hostId: string;
